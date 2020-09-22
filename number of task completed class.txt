@@ -1,0 +1,24 @@
+@isTest
+private class TestKuncha {
+    static testMethod void count()
+    {
+    List<Account> lau = new List<Account>();
+       Task tp =new Task();
+        tp.Priority='High';
+        tp.Subject='Send Quote';
+        tp.Status='Completed';
+         test.startTest();
+        insert tp;
+        test.stopTest();
+        for(Account acca:[SELECT Id, Name, Closed_Tasks__c,(Select Status From Tasks Where Status = 'Completed' )  FROM Account]) {
+            List<Task> lt = acca.Tasks;
+            acca.Closed_Tasks__c = lt.size();
+            lau.add(acca);           
+        }
+        try{
+            update lau;
+        }catch(System.Exception e){
+            System.debug('%%&&** error in creation of task %%&&**'+e.getMessage());
+        }
+    }
+    }

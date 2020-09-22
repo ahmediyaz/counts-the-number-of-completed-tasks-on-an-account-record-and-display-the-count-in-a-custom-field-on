@@ -1,0 +1,68 @@
+trigger kuncha on Task(after insert, after undelete, after delete, after update) {    
+    Set<Id> aoa = new Set<Id>();
+    Set<Id> aca = new Set<Id>();
+    List<Account> lau = new List<Account>();
+    List<Account> lota = new List<Account>();
+    List<Account> lcta = new List<Account>();
+    if(Trigger.IsAfter){
+        if(Trigger.IsInsert || Trigger.IsUndelete  || Trigger.isUpdate) {
+            for(Task ta: Trigger.new) {
+                if(String.valueOf(ta.WhatId).startsWithIgnoreCase('001')) {
+                    if(ta.Status.equalsIgnoreCase('Completed')){
+                        aca.add(ta.WhatId);
+                        System.debug('%%&&** task Completed %%&&**'+aca);
+                    }
+                    else {
+                        aoa.add(ta.WhatId);
+                        System.debug('%%&&** task Open %%&&**'+aoa);
+                    }
+                    if(Trigger.IsUpdate){
+                        if(Trigger.oldMap.get(ta.Id).WhatId != ta.WhatId){
+                            if(ta.Status.equalsIgnoreCase('Completed')){
+                                aca.add(Trigger.oldMap.get(ta.Id).WhatId );
+                                System.debug('%%&&** task Update Closed %%&&**'+aca);
+                            }
+                            else {
+                                aoa.add(Trigger.oldMap.get(ta.Id).WhatId );
+                                System.debug('%%&&**task Update Open%%&&**'+aoa);
+                            }
+                        }
+                    }
+                }
+            }
+        }        
+        if(Trigger.IsDelete){
+            for(Task ta : Trigger.Old){
+                if(String.valueOf(ta.WhatId).startsWithIgnoreCase('001')) {
+                    if(ta.Status.equalsIgnoreCase('Completed')){
+                        aca.add(ta.WhatId);
+                        System.debug('%%&&**  Deleted Completed %%&&**');
+                    }
+                    else {
+                        aoa.add(ta.WhatId);
+                        System.debug('%%&&** Deleted Open %%&&**');
+                    }
+                }
+            }
+        }            
+        lota=[SELECT Id, Name, Open_Tasks__c,(Select Status From Tasks Where Status != 'Completed' ) FROM Account WHERE Id =:aoa];
+       lcta =[SELECT Id, Name, Closed_Tasks__c,(Select Status From Tasks Where Status = 'Completed' )  FROM Account WHERE Id =:aca];
+        System.debug('%%&&** Account Task Opened %%&&**'+lota );
+        System.debug('%%&&** Account task completed %%&&**'+lcta);       
+        for(Account acca:lota) {
+            List<Task> lt = acca.Tasks;
+            acca.Open_Tasks__c = lt.size();
+           lau.add(acca);           
+        }
+        for(Account acca:lcta) {
+            List<Task> lt = acca.Tasks;
+            acca.Closed_Tasks__c = lt.size();
+            lau.add(acca);           
+        }
+        try{
+            update lau;
+        }catch(System.Exception e){
+            System.debug('%%&&** error in creation of task %%&&**'+e.getMessage());
+        }
+    }
+}
